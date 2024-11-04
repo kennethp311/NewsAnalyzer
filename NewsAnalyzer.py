@@ -7,7 +7,7 @@ from matplotlib.ticker import MaxNLocator     # only used to make y-axis lines a
 import numpy as np
 from datetime import date
 from collections import Counter
-
+import os
 
 class NewsAnalyzer:
     def __init__(self, db_config, gpt_key, table_name, company_name):
@@ -232,6 +232,11 @@ class NewsAnalyzer:
 
 
     def Plot_Result(self, dict_count):
+
+        # Define the output folder path
+        output_folder = os.path.join(os.getcwd(), "MyPlots")
+        os.makedirs(output_folder, exist_ok=True)  # Create the folder if it doesn't exist
+
         # Separate dates and counts
         dates = list(dict_count.keys())
         # Add a small height of 0.05 for bars with a count of 0 to ensure they display
@@ -263,6 +268,11 @@ class NewsAnalyzer:
         # Add legend
         plt.legend()
         plt.tight_layout()
+
+        # Save the plot
+        output_path = os.path.join(output_folder, f"{self.company_name}_news_sentiment.png")
+        plt.savefig(output_path, format='png')
+        
         plt.show()
 
 
@@ -289,6 +299,9 @@ class NewsAnalyzer:
         except Exception as e:
             return f"Error: {e}"
         
+
+
+
 
 
 # def Analyze_and_plot(db_config, gpt_client, table_name, company_name):
