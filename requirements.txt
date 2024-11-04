@@ -1,3 +1,7 @@
+Required API Keys: (1) News API
+                   (2) Openai API
+
+
 Virtual Environment [pip list] 
 ____________________________________
 Package                Version
@@ -47,8 +51,9 @@ urllib3                2.2.3
 webencodings           0.5.1
 yfinance               0.2.44
 
-
 Activate Environment: source myenv/bin/activate 
                       deactivate 
+
+
 
 
