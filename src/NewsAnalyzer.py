@@ -7,7 +7,6 @@ from matplotlib.ticker import MaxNLocator     # only used to make y-axis lines a
 import numpy as np
 from datetime import date
 from collections import Counter
-
 import os
 
 class NewsAnalyzer:
@@ -233,8 +232,9 @@ class NewsAnalyzer:
 
 
     def Plot_Result(self, dict_count):
-        # Define the output folder path
-        output_folder = os.path.join(os.getcwd(), "MyPlots")
+        # Define the output folder path in the parent directory
+        parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        output_folder = os.path.join(parent_directory, "plots")  # 2nd call of same plot and name will replace the the original image 
         os.makedirs(output_folder, exist_ok=True)  # Create the folder if it doesn't exist
 
         # Separate dates and counts
@@ -301,9 +301,6 @@ class NewsAnalyzer:
         
 
 
-
-
-
 # def Analyze_and_plot(db_config, gpt_client, table_name, company_name):
 #     NewsAnalyzer_obj = NewsAnalyzer(db_config, gpt_client, table_name, company_name)
 #     NewsAnalyzer_obj.analyze_articles_relevancy()
@@ -313,5 +310,3 @@ class NewsAnalyzer:
 # def onlyplot(db_config, gpt_client, table_name, company_name):
 #     NewsAnalyzer_obj = NewsAnalyzer(db_config, gpt_client, table_name, company_name)
 #     NewsAnalyzer_obj.Plot_Result(NewsAnalyzer_obj.get_results_of_occurences())
-
-
