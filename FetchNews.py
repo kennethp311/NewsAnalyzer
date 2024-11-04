@@ -5,20 +5,13 @@ import mysql.connector
 import pandas as pd
 
 
-class DatabaseConfig:
-    def __init__(self, host, user, password, db_name):
-        self.host = host
-        self.user = user
-        self.password = password
-        self.db_name = db_name
-
-
-class Fetch_News:
-    def __init__(self, db_config, news_api_key):
+class FetchNews:
+    def __init__(self, db_config, news_api_key, table_name):
         self.db_config = db_config
         self.conn = self.connect_to_db()
         self.cursor = self.conn.cursor(dictionary=True)
         self.news_api_key = news_api_key
+        self.table_name = table_name
 
     def __del__(self):
         if self.conn and self.conn.is_connected():
@@ -38,7 +31,6 @@ class Fetch_News:
         except mysql.connector.Error as err:
             print(f"Error in connect_to_db(): {err}")
             return None
-
 
 
     def convert_to_pacific_time(self, utc_date_str):
@@ -70,27 +62,24 @@ class Fetch_News:
 
 
 
-    def store_articles_in_mysql(self, articles, table_name):
+    def store_articles_in_mysql(self, articles):
         if not articles:
             print("No articles found.")
             return
-
-
-        #self.cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
             
         self.cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS {table_name} (
+        CREATE TABLE IF NOT EXISTS {self.table_name} (
             Title TEXT NOT NULL,
             Description TEXT NOT NULL,
             Date DATETIME NOT NULL,
-            URL VARCHAR(255) NOT NULL,
+            URL VARCHAR(255) PRIMARY KEY,
             GPT_Relevancy VARCHAR(255) DEFAULT NULL,
             GPT_Opinion VARCHAR(255) DEFAULT NULL
         )
         ''')
 
         insert_query = f'''
-        INSERT INTO {table_name} (Title, Description, Date, URL)
+        INSERT IGNORE INTO {self.table_name} (Title, Description, Date, URL)
         VALUES (%s, %s, %s, %s)
         '''
 
@@ -110,11 +99,23 @@ class Fetch_News:
                     print(f"Error inserting article: {err}")
 
         self.conn.commit()
-        print(f"Data for {table_name} has been stored successfully in MySQL.")
+        print(f"Data for {self.table_name} has been stored successfully in MySQL.")
 
 
 
-    def Cleanup_table(self, table_name):
-        query = f"DELETE FROM {table_name} WHERE Title = '[removed]' OR Description = '[removed]' OR URL LIKE '%removed.com'"
+    def Cleanup_table(self):
+        query = f"DELETE FROM {self.table_name} WHERE Title = '[removed]' OR Description = '[removed]' OR URL LIKE '%removed.com'"
         self.cursor.execute(query)
         self.conn.commit()
+
+
+
+# EXAMPLE CODE:
+# FetchNews_obj = FetchNews(db_config, newsapi_key, table_name)
+
+# for day in range(1, 32):
+#     date_str = f"2024-10-{day:02d}"     # Format the day to ensure two digits (e.g., '05' instead of '5')    
+#     articles = FetchNews_obj.fetch_news_at_date('Nvidia stock performance', date_str)
+#     FetchNews_obj.store_articles_in_mysql(articles)
+
+# FetchNews_obj.Cleanup_table()
