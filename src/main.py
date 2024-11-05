@@ -16,11 +16,13 @@ def Fetch_News(table_name, news_search_topic):
         #FetchNews_obj.Cleanup_table()
 
 
-
 def Fetch_Stocks(ticker_symbol, period):
     FetchStock_obj = FetchStock(db_config, ticker_symbol)
     FetchStock_obj.FetchStock_DB(period)
 
+def Plot_Stocks(ticker_symbol):
+    FetchStock_obj = FetchStock(db_config, ticker_symbol)
+    FetchStock_obj.plot_close_prices()
 
 def AnalyzeNews(table_name, stock_name):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], table_name, stock_name)
@@ -30,7 +32,7 @@ def AnalyzeNews(table_name, stock_name):
 
 def PlotNews(table_name, stock_name):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], table_name, stock_name)
-    NewsAnalyzer_obj.Plot_Result(NewsAnalyzer_obj.get_results_of_occurences())
+    NewsAnalyzer_obj.PlotResult(NewsAnalyzer_obj.get_results_of_occurences())
 
 
 
@@ -44,6 +46,7 @@ def main():
     # AnalyzeNews(table_name, ticker_symbol)
     # PlotNews(table_name, ticker_symbol)    
     # Fetch_Stocks(ticker_symbol, '1mo')
+    # Plot_Stocks(ticker_symbol)
 
 
 
