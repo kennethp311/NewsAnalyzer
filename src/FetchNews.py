@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import mysql.connector
 import pandas as pd
@@ -103,20 +103,19 @@ class FetchNews:
         print(f"Data for {self.table_name} has been stored successfully in MySQL.")
 
 
-
     def Cleanup_table(self):
         query = f"DELETE FROM {self.table_name} WHERE Title = '[removed]' OR Description = '[removed]' OR URL LIKE '%removed.com'"
         self.cursor.execute(query)
         self.conn.commit()
 
 
+    def FetchNews_DB(self, news_search_topic):
+        today = datetime.today()
+        dates_30_days_prior = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]    
 
-# EXAMPLE CODE:
-# FetchNews_obj = FetchNews(db_config, newsapi_key, table_name)
+        for day in dates_30_days_prior:
+            articles = self.fetch_news_at_date(news_search_topic, day)
+            self.store_articles_in_mysql(articles)
+        
+        #self.Cleanup_table()
 
-# for day in range(1, 32):
-#     date_str = f"2024-10-{day:02d}"     # Format the day to ensure two digits (e.g., '05' instead of '5')    
-#     articles = FetchNews_obj.fetch_news_at_date('Nvidia stock performance', date_str)
-#     FetchNews_obj.store_articles_in_mysql(articles)
-
-# FetchNews_obj.Cleanup_table()
