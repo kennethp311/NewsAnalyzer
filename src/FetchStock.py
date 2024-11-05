@@ -1,4 +1,5 @@
 import yfinance as yf
+import matplotlib.pyplot as plt
 import mysql.connector
 import pandas as pd
 import pytz
@@ -10,6 +11,7 @@ class FetchStock:
         self.conn = self.connect_to_db()
         self.cursor = self.conn.cursor(dictionary=True)
         self.ticker_symbol = ticker_symbol
+        self.table_name = f"{ticker_symbol.lower()}_stock_data"
 
     def __del__(self):
         if self.conn and self.conn.is_connected():
@@ -39,10 +41,10 @@ class FetchStock:
         # Convert 'Date' column to Pacific Time (Los Angeles), Since it's already timezone-aware, use tz_convert directly
         stock_history['Date'] = stock_history['Date'].dt.tz_convert('America/Los_Angeles').dt.date
 
-        self.cursor.execute(f"DROP TABLE IF EXISTS {self.ticker_symbol.lower()}_stock_data;")
+        self.cursor.execute(f"DROP TABLE IF EXISTS {self.table_name};")
 
         self.cursor.execute(f'''
-        CREATE TABLE IF NOT EXISTS {self.ticker_symbol.lower()}_stock_data (
+        CREATE TABLE IF NOT EXISTS {self.table_name} (
             Date DATE PRIMARY KEY,
             Open FLOAT NOT NULL,
             High FLOAT NOT NULL,
@@ -56,7 +58,7 @@ class FetchStock:
         
         for index, row in stock_history.iterrows():
             self.cursor.execute(f'''
-            INSERT INTO {self.ticker_symbol.lower()}_stock_data (Date, Open, High, Low, Close, Volume, Dividends, Stock_Splits) 
+            INSERT INTO {self.table_name}(Date, Open, High, Low, Close, Volume, Dividends, Stock_Splits) 
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
             Open=VALUES(Open), High=VALUES(High), Low=VALUES(Low), Close=VALUES(Close),
@@ -65,5 +67,26 @@ class FetchStock:
         
         self.conn.commit()
 
-        print(f"Stock data for {self.ticker_symbol} has been stored successfully in MySQL for the period: {period}.")
+        print(f"Stock data for {self.ticker_symbol} has been stored successfully as a table named {self.table_name} in MySQL for the period: {period}.")
 
+
+    def plot_close_prices(self):
+        # Fetch data from the database
+        self.cursor.execute(f"SELECT Date, Close FROM {self.table_name} ORDER BY Date ASC")
+        result = self.cursor.fetchall()
+
+        # Extract dates and closing prices
+        dates = [row['Date'] for row in result]
+        close_prices = [row['Close'] for row in result]
+
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.plot(dates, close_prices, label="Close Price")
+        plt.xlabel("Date")
+        plt.ylabel("Close Price")
+        plt.title(f"{self.ticker_symbol} Closing Prices Over Time")
+        plt.legend()
+        plt.grid(True)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
