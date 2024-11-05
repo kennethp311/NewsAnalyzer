@@ -8,16 +8,19 @@ import numpy as np
 from datetime import date
 from collections import Counter
 import os
+import plotly.graph_objects as go
+
 
 class NewsAnalyzer:
-    def __init__(self, db_config, gpt_key, table_name, ticker_symbol):
+    def __init__(self, db_config, gpt_key, ticker_symbol):
         self.db_config = db_config
         self.gpt_client = OpenAI(api_key = gpt_key)
         self.conn = self.connect_to_db()
         self.cursor = self.conn.cursor(dictionary=True)
-        self.table_name = table_name
         self.ticker_symbol = ticker_symbol
-
+        self.article_table = f"{ticker_symbol.lower()}_article_data"
+        self.stock_table = f"{ticker_symbol.lower()}_stock_data"
+        
     def __del__(self):
         if self.conn and self.conn.is_connected():
             self.conn.close()
@@ -41,7 +44,7 @@ class NewsAnalyzer:
 
     def fetch_table(self):  # Helper Function
         try:
-            query = f"SELECT * FROM {self.table_name}"
+            query = f"SELECT * FROM {self.article_table}"
             self.cursor.execute(query)
             return self.cursor.fetchall()
 
@@ -150,7 +153,7 @@ class NewsAnalyzer:
 
         try:
             for title, gpt_relevancy in dict_relevancy.items():
-                query = f"UPDATE {self.table_name} SET GPT_Relevancy = %s WHERE title = %s"
+                query = f"UPDATE {self.article_table} SET GPT_Relevancy = %s WHERE title = %s"
                 self.cursor.execute(query, (gpt_relevancy, title))
         
         except mysql.connector.Error as err:
@@ -181,11 +184,11 @@ class NewsAnalyzer:
                 # print(dict_url_to_opinion[my_url], '\n')
 
             elif my_gpt_relevancy == 'Not Relevant' and article.get('GPT_Opinion') is not None: 
-                self.cursor.execute(f"UPDATE {self.table_name} set GPT_Opinion = NULL WHERE GPT_Relevancy = 'Not Relevant';")
+                self.cursor.execute(f"UPDATE {self.article_table} set GPT_Opinion = NULL WHERE GPT_Relevancy = 'Not Relevant';")
 
         try:
             for url, gpt_opinion in dict_url_to_opinion.items():
-                query = f"UPDATE {self.table_name} SET GPT_Opinion = %s WHERE URL = %s"
+                query = f"UPDATE {self.article_table} SET GPT_Opinion = %s WHERE URL = %s"
                 self.cursor.execute(query, (gpt_opinion, url))
         
         except mysql.connector.Error as err:
@@ -201,7 +204,7 @@ class NewsAnalyzer:
         my_dict = {}
         dict_count = {}
 
-        query = f"SELECT Date, GPT_Opinion FROM {self.table_name} WHERE GPT_Relevancy = 'Relevant' AND GPT_Opinion = 'Good News' OR GPT_Opinion = 'Bad News' OR GPT_Opinion ='Neutral News' ORDER BY Date ASC"
+        query = f"SELECT Date, GPT_Opinion FROM {self.article_table} WHERE GPT_Relevancy = 'Relevant' AND GPT_Opinion = 'Good News' OR GPT_Opinion = 'Bad News' OR GPT_Opinion ='Neutral News' ORDER BY Date ASC"
         self.cursor.execute(query)
         my_table = self.cursor.fetchall()
 
@@ -229,9 +232,19 @@ class NewsAnalyzer:
 
         return dict_count
 
+    def ScoreResult(self, dict_count):
+        dict_score = {}
+
+        for date in dict_count:
+            dict_score[date] = dict_count[date]['Good News'] - dict_count[date]['Bad News']
+        
+        print(dict_score)
 
 
-    def Plot_Result(self, dict_count):
+
+
+
+    def PlotResult(self, dict_count):
         # Define the output folder path in the parent directory
         parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         output_folder = os.path.join(parent_directory, "plots")  # 2nd call of same plot and name will replace the the original image 
@@ -298,4 +311,55 @@ class NewsAnalyzer:
         
         except Exception as e:
             return f"Error: {e}"
+
+
+
+    def myfunc(self):
+        
+        query = f"SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM {self.article_table};"
+        self.cursor.execute(query)
+        stock_dates = self.cursor.fetchall()
+
+        for datetime in stock_dates:
+            start_date = datetime.get('min_date').date()
+            end_date = datetime.get('max_date').date()
+        
+        query = f"SELECT Date, Close FROM {self.stock_table} WHERE Date BETWEEN %s AND %s ORDER BY Date ASC;"
+        self.cursor.execute(query, (start_date, end_date))
+
+        result = self.cursor.fetchall()
+        # for a in result:
+        #     print(a.get('Date'), a.get('Close'))
+        
+
+        # Extract dates and closing prices
+        dates = [row['Date'] for row in result]
+        close_prices = [row['Close'] for row in result]
+
+        # Create a scatter plot with Plotly
+        fig = go.Figure()
+
+        # Add a scatter trace with date and close price
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=close_prices,
+            mode='lines+markers',  # Line plot with markers
+            name='Close Price',
+            marker=dict(size=6),
+            text=[f"Date: {date}<br>Close: {close}" for date, close in zip(dates, close_prices)],  # Tooltip text
+            hoverinfo='text'  # Show custom text on hover
+        ))
+
+        # Set title and labels
+        fig.update_layout(
+            title=f"{self.ticker_symbol} Closing Prices Over Time",
+            xaxis_title="Date",
+            yaxis_title="Close Price",
+            template="plotly_white"
+        )
+
+        # Display the plot
+        fig.show()
+
+
 
