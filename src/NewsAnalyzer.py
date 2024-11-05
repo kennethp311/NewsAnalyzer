@@ -10,13 +10,13 @@ from collections import Counter
 import os
 
 class NewsAnalyzer:
-    def __init__(self, db_config, gpt_key, table_name, company_name):
+    def __init__(self, db_config, gpt_key, table_name, ticker_symbol):
         self.db_config = db_config
         self.gpt_client = OpenAI(api_key = gpt_key)
         self.conn = self.connect_to_db()
         self.cursor = self.conn.cursor(dictionary=True)
         self.table_name = table_name
-        self.company_name = company_name
+        self.ticker_symbol = ticker_symbol
 
     def __del__(self):
         if self.conn and self.conn.is_connected():
@@ -58,10 +58,10 @@ class NewsAnalyzer:
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": (
-                        f"You are a news analyst that determines if a news article about company {self.company_name} is 'Relevant' for understanding its financial performance or stock behavior."
-                        f"A news is 'Relevant' if there is any little potential for an article to showcase Good News or Bad News about company {self.company_name} in relation to its stock price."
-                        f"Examples of attributes of Good News for {self.company_name} in relation to its stock price: Revenue and Profit Growth, New Product launches or Innovations, Market Expansion and Partnerships, Positive market Positioning, Analyst Upgrades or Increase Price Targets, Cost Reductions and Efficiency Gains, Macroeconomic tailwinds"
-                        f"Examples of attributes of Bad News for {self.company_name} in relation to its stock price: Earnings Misses or Lowered Revenue/Profit Guidance, Product Delays or Failures, Loss of Market Share, Weak Macroeconomic Conditions, Analyst Downgrades or Lowered Price Targets, Negative Partnership or Customers News, High Costs or Margin Compression , Legal or Regulatory Issues"
+                        f"You are a news analyst that determines if a news article about company {self.ticker_symbol} is 'Relevant' for understanding its financial performance or stock behavior."
+                        f"A news is 'Relevant' if there is any little potential for an article to showcase Good News or Bad News about company {self.ticker_symbol} in relation to its stock price."
+                        f"Examples of attributes of Good News for {self.ticker_symbol} in relation to its stock price: Revenue and Profit Growth, New Product launches or Innovations, Market Expansion and Partnerships, Positive market Positioning, Analyst Upgrades or Increase Price Targets, Cost Reductions and Efficiency Gains, Macroeconomic tailwinds"
+                        f"Examples of attributes of Bad News for {self.ticker_symbol} in relation to its stock price: Earnings Misses or Lowered Revenue/Profit Guidance, Product Delays or Failures, Loss of Market Share, Weak Macroeconomic Conditions, Analyst Downgrades or Lowered Price Targets, Negative Partnership or Customers News, High Costs or Margin Compression , Legal or Regulatory Issues"
                         "Any news about deals of a product from Amazon or other stores, are not relevant news"
                         "It takes too much time to read each article's content, so it is your job to determine whether am article's brief description and title is enough to warrant further analysis."
                     )},
@@ -70,7 +70,7 @@ class NewsAnalyzer:
                         "content": (
                             f"Here is the article's title: '{title}'. "
                             f"Here is the article's description: '{description}'. "
-                            f"Based on the brief description and title, does this article have the potential to showcase any Good, Bad, or Neutral news about company {self.company_name} after further analysis into the contents of the articles url?"
+                            f"Based on the brief description and title, does this article have the potential to showcase any Good, Bad, or Neutral news about company {self.ticker_symbol} after further analysis into the contents of the articles url?"
                             "Make sure to respond only with 'Relevant' or 'Not Relevant'"
                     )}],
                 max_tokens=150,
@@ -98,7 +98,7 @@ class NewsAnalyzer:
                         # f"Example of attributes of Bad News for {self.company_name} in relation to its stock price: Earnings Misses or Lowered Revenue/Profit Guidance, Product Delays or Failures, Loss of Market Share, Weak Macroeconomic Conditions, Analyst Downgrades or Lowered Price Targets, Negative Partnership or Customers News, High Costs or Margin Compression , Legal or Regulatory Issues"
                         # f"Example of attributes of Neutral News for {self.company_name} in relation to its stock price: Discounts or Promotions by Retail Partners, Product or Service Announcements without market impact, brand mentions without financial implications, Minor operational updates, status quo regulatory news, routine leadership comments or guidance confirmation, general industry trends without specific impact"
 
-                        f"You are a news analyst tasked with determining the impact of news articles about company {self.company_name} on its stock performance, categorizing them as 'Good News', 'Bad News', or 'Neutral News'."
+                        f"You are a news analyst tasked with determining the impact of news articles about company {self.ticker_symbol} on its stock performance, categorizing them as 'Good News', 'Bad News', or 'Neutral News'."
                         "IMPORTANT RULE: Respond only with 'Good News', 'Bad News', 'Neutral News', 'Useless/Error'. Definitions and examples are as follows:"
                         " - 'Good News' includes news expected to lead to an increase in the stock price."
                         "'Good News' Examples: Robust quarterly earnings that exceed market expectations, successful launch of innovative products, strategic expansions into new markets, securing high-value partnerships, and receiving favorable regulatory decisions."
@@ -117,7 +117,7 @@ class NewsAnalyzer:
 
                             "IMPORTANT RULE: Respond only with 'Good News', 'Bad News', 'Neutral News', or 'Useless/Error'."
                             f"Review the following content from the article: '{url_content}'. "
-                            f"Based on this content, categorize the news about {self.company_name} in terms of its impact on financial performance or stock behavior."
+                            f"Based on this content, categorize the news about {self.ticker_symbol} in terms of its impact on financial performance or stock behavior."
                         )
                     }
                 ],
@@ -260,7 +260,7 @@ class NewsAnalyzer:
         # Add labels and title
         plt.xlabel('Date', fontweight='bold')
         plt.ylabel('Count', fontweight='bold')
-        plt.title(f'{self.company_name}: News Sentiment Counts by Date', fontweight='bold')
+        plt.title(f'{self.ticker_symbol}: News Sentiment Counts by Date', fontweight='bold')
         
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True)) # used to make y-axis lines as integers
         plt.xticks(np.arange(len(dates)), dates, rotation=45, ha='right')
@@ -270,7 +270,7 @@ class NewsAnalyzer:
         plt.tight_layout()
 
         # Save the plot
-        output_path = os.path.join(output_folder, f"{self.company_name}_news_sentiment.png")
+        output_path = os.path.join(output_folder, f"{self.ticker_symbol}_news_sentiment.png")
         plt.savefig(output_path, format='png')
         
         plt.show()
@@ -298,15 +298,4 @@ class NewsAnalyzer:
         
         except Exception as e:
             return f"Error: {e}"
-        
 
-
-# def Analyze_and_plot(db_config, gpt_client, table_name, company_name):
-#     NewsAnalyzer_obj = NewsAnalyzer(db_config, gpt_client, table_name, company_name)
-#     NewsAnalyzer_obj.analyze_articles_relevancy()
-#     NewsAnalyzer_obj.analyze_articles_opinion()
-#     NewsAnalyzer_obj.Plot_Result(NewsAnalyzer_obj.get_results_of_occurences())
-
-# def onlyplot(db_config, gpt_client, table_name, company_name):
-#     NewsAnalyzer_obj = NewsAnalyzer(db_config, gpt_client, table_name, company_name)
-#     NewsAnalyzer_obj.Plot_Result(NewsAnalyzer_obj.get_results_of_occurences())
