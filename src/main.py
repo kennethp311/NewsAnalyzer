@@ -35,10 +35,10 @@ def RunProgram():
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
 
     if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) and NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table):
-        decision0 = input("Would you like to store the News sentiment and stocks price plot? (Y/N): ")
+        decision0 = input("Would you like to store the News-Stocks plot? (Y/N): ")
         
         if decision0.lower() == 'y':
-                NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
                 return
 
         elif decision0.lower() == 'n':
@@ -108,6 +108,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
 
 
 
