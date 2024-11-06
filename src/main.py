@@ -4,15 +4,15 @@ from FetchStock import FetchStock
 from Config import db_config, api_keys
 
 
-def Fetch_News(ticker_symbol):
+def FetchNews(ticker_symbol):
     FetchNews_obj = FetchNews(db_config, api_keys['News API'], ticker_symbol)    
     FetchNews_obj.FetchNews_DB()
 
-def Fetch_Stocks(ticker_symbol, period):
+def FetchStocks(ticker_symbol, period = "3mo"):
     FetchStock_obj = FetchStock(db_config, ticker_symbol)
     FetchStock_obj.FetchStock_DB(period)
 
-def Plot_Stocks(ticker_symbol):
+def PlotStocks(ticker_symbol):
     FetchStock_obj = FetchStock(db_config, ticker_symbol)
     FetchStock_obj.plot_close_prices()
 
@@ -23,43 +23,86 @@ def AnalyzeNews(ticker_symbol):
 
 def PlotNews(ticker_symbol):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
-    NewsAnalyzer_obj.PlotResult(NewsAnalyzer_obj.get_results_of_occurences())
+    NewsAnalyzer_obj.PlotNews(NewsAnalyzer_obj.get_results_of_occurences())
+
+def PlotStocksNews(ticker_symbol):
+    NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
+    NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
 
 
-def Final_PlotScore(ticker_symbol):
+def RunProgram():
+    ticker_symbol = input("Enter Stock Ticker Symbol: ")
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
 
-    if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) == False:
-        decision1 = input(f"{NewsAnalyzer_obj.article_table} doesn't exist, so would you like to create one? (Y/N): ")
-        decision2 = input("Would you also like me to analyze and plot the news too? (Y/N): ")
-
-        if decision1 == 'Y':     
-            Fetch_News(ticker_symbol)
+    if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) and NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table):
+        decision0 = input("Would you like to store the News sentiment and stocks price plot? (Y/N): ")
         
-        if decision2 == 'Y': 
-            AnalyzeNews(ticker_symbol)
-            PlotNews(ticker_symbol)
+        if decision0.lower() == 'y':
+                NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                return
+
+        elif decision0.lower() == 'n':
+                NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                return
+        else:
+            print("Wrong Input [End Program]")
+            return
+
+    if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) == False:
+
+        decision1 = input(f"{NewsAnalyzer_obj.article_table} doesn't exist, so would you like to create one? (Y/N): ")
+       
+        if (decision1.lower() == 'y'):
+            decision2 = input(f"Would you also like to analyze and plot {NewsAnalyzer_obj.article_table}? (Y/N): ")
+            
+            if (decision2.lower() == 'y'):
+                FetchNews(ticker_symbol)
+                AnalyzeNews(ticker_symbol)
+                PlotNews(ticker_symbol)
+            
+            elif (decision2.lower() == 'n'):
+                FetchNews(ticker_symbol)
+                return
+
+            else:
+                print("Wrong Input [End Program]")
+                return
+
+        elif decision1.lower() == 'n': 
+            if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table):
+                decision4 = input(f"Plot the closed prices over time of stock {ticker_symbol.upper()} (Y/N): ")
+                if decision4.lower() == 'y':
+                    PlotStocks(ticker_symbol)
+                return
+            else:
+                return
+            
+        else:
+            print("Wrong Input [End Program]")
+            return
 
     if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table) == False:
         print(f"{NewsAnalyzer_obj.stock_table} doesn't exist, hence we are creating one for a 3mo period.")
-        Fetch_Stocks(ticker_symbol, '3mo')
+        FetchStocks(ticker_symbol, '3mo')
 
     NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
 
 
 
 def main():
-    ticker_symbol = input("Enter Stock Ticker Symbol: ")
-    table_name = f'{ticker_symbol.lower()}_article_data'
+    RunProgram()
+    
+    # ticker_symbol = input("Enter Stock Ticker Symbol: ")
+    # table_name = f'{ticker_symbol.lower()}_article_data'
     # news_search_topic = f'{ticker_symbol} stock performance'
 
-    # Fetch_News(ticker_symbol)
+    # FetchNews(ticker_symbol)
     # AnalyzeNews(ticker_symbol)
     # PlotNews(ticker_symbol)    
-    # Fetch_Stocks(ticker_symbol, '3mo')
-    # Plot_Stocks(ticker_symbol)
-    # Fetch_Stocks(ticker_symbol, '3mo')
-    Final_PlotScore(ticker_symbol)
+    # FetchStocks(ticker_symbol, '3mo')
+    # PlotStocks(ticker_symbol)
+    # FetchStocks(ticker_symbol, '3mo')
+    # PlotStocksNews(ticker_symbol)
 
 
 
