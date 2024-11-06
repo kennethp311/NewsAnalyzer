@@ -4,7 +4,7 @@ from FetchStock import FetchStock
 from Config import db_config, api_keys
 
 
-def FetchNews(ticker_symbol):
+def Fetch_News(ticker_symbol):
     FetchNews_obj = FetchNews(db_config, api_keys['News API'], ticker_symbol)    
     FetchNews_obj.FetchNews_DB()
 
@@ -35,18 +35,36 @@ def RunProgram():
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
 
     if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) and NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table):
-        decision0 = input("Would you like to store the News-Stocks plot? (Y/N): ")
+        print(f"{NewsAnalyzer_obj.article_table} and {NewsAnalyzer_obj.stock_table} already exist.")
+
+        decision0 = input(f"Would you like to overwrite existing data and start over? (Y/N): ")
         
         if decision0.lower() == 'y':
-                NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
-                return
+            NewsAnalyzer_obj.cursor.execute(f"DROP TABLE {NewsAnalyzer_obj.article_table};")
+            FetchStocks(ticker_symbol)
+            Fetch_News(ticker_symbol)
+            AnalyzeNews(ticker_symbol)
+            NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+            return
 
         elif decision0.lower() == 'n':
-                NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                NewsAnalyzer_obj.cursor.execute(f"SELECT COUNT(DISTINCT GPT_Opinion) FROM {NewsAnalyzer_obj.article_table};")
+                result = NewsAnalyzer_obj.cursor.fetchall()
+                a = result[0]['COUNT(DISTINCT GPT_Opinion)'] if result else None
+                
+                if a > 0: # MEANS TABLE IS ALREADY ANALYZED BY GPT
+                    NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                    return 
+                elif a is None:
+                    return
+                
+                print(f"Table isn't analyed yet or the table size is very small or close to 0.")
+                # NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
                 return
         else:
             print("Wrong Input [End Program]")
             return
+
 
     if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) == False:
 
@@ -56,12 +74,12 @@ def RunProgram():
             decision2 = input(f"Would you also like to analyze and plot {NewsAnalyzer_obj.article_table}? (Y/N): ")
             
             if (decision2.lower() == 'y'):
-                FetchNews(ticker_symbol)
+                Fetch_News(ticker_symbol)
                 AnalyzeNews(ticker_symbol)
                 PlotNews(ticker_symbol)
             
             elif (decision2.lower() == 'n'):
-                FetchNews(ticker_symbol)
+                Fetch_News(ticker_symbol)
                 return
 
             else:
@@ -96,7 +114,7 @@ def main():
     # table_name = f'{ticker_symbol.lower()}_article_data'
     # news_search_topic = f'{ticker_symbol} stock performance'
 
-    # FetchNews(ticker_symbol)
+    # Fetch_News(ticker_symbol)
     # AnalyzeNews(ticker_symbol)
     # PlotNews(ticker_symbol)    
     # FetchStocks(ticker_symbol, '3mo')
@@ -108,7 +126,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
