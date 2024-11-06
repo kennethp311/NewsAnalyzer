@@ -325,7 +325,8 @@ class NewsAnalyzer:
             return f"Error: {e}"
 
 
-    def show_plot_news_and_stocks_relationship(self, dict_score):
+    def show_plot_news_and_stocks_relationship(self):
+        dict_score = self.ScoreResult()
         # Get stock data date range
         query = f"SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM {self.article_table};"
         self.cursor.execute(query)
@@ -432,7 +433,8 @@ class NewsAnalyzer:
 
 
 
-    def store_plot_news_and_stocks_relationship(self, dict_score):
+    def store_plot_news_and_stocks_relationship(self):
+        dict_score = self.ScoreResult()
         parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         ticker_symbol_folder = os.path.join(parent_directory, "plots", self.ticker_symbol.upper())
         os.makedirs(ticker_symbol_folder, exist_ok=True)  # Ensure the 'plots/ticker_symbol' directory exists
@@ -543,6 +545,7 @@ class NewsAnalyzer:
 
         # Display the plot
         fig.show()
+
 
 
 
