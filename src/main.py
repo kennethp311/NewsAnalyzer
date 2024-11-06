@@ -27,7 +27,8 @@ def PlotNews(ticker_symbol):
 
 def PlotStocksNews(ticker_symbol):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
-    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship()
+
 
 
 def RunProgram():
@@ -44,22 +45,22 @@ def RunProgram():
             FetchStocks(ticker_symbol)
             Fetch_News(ticker_symbol)
             AnalyzeNews(ticker_symbol)
-            NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+            NewsAnalyzer_obj.store_plot_news_and_stocks_relationship()
             return
 
         elif decision0.lower() == 'n':
                 NewsAnalyzer_obj.cursor.execute(f"SELECT COUNT(DISTINCT GPT_Opinion) FROM {NewsAnalyzer_obj.article_table};")
                 result = NewsAnalyzer_obj.cursor.fetchall()
                 a = result[0]['COUNT(DISTINCT GPT_Opinion)'] if result else None
-                
+
                 if a > 0: # MEANS TABLE IS ALREADY ANALYZED BY GPT
-                    NewsAnalyzer_obj.store_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                    NewsAnalyzer_obj.store_plot_news_and_stocks_relationship()
                     return 
                 elif a is None:
                     return
                 
                 print(f"Table isn't analyed yet or the table size is very small or close to 0.")
-                # NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                # NewsAnalyzer_obj.show_plot_news_and_stocks_relationship()
                 return
         else:
             print("Wrong Input [End Program]")
@@ -103,7 +104,7 @@ def RunProgram():
         print(f"{NewsAnalyzer_obj.stock_table} doesn't exist, hence we are creating one for a 3mo period.")
         FetchStocks(ticker_symbol, '3mo')
 
-    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship()
 
 
 
@@ -126,12 +127,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
 
 
 
