@@ -27,7 +27,7 @@ def PlotNews(ticker_symbol):
 
 def PlotStocksNews(ticker_symbol):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
-    NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
 
 
 def RunProgram():
@@ -38,11 +38,11 @@ def RunProgram():
         decision0 = input("Would you like to store the News sentiment and stocks price plot? (Y/N): ")
         
         if decision0.lower() == 'y':
-                NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
                 return
 
         elif decision0.lower() == 'n':
-                NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+                NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
                 return
         else:
             print("Wrong Input [End Program]")
@@ -85,7 +85,7 @@ def RunProgram():
         print(f"{NewsAnalyzer_obj.stock_table} doesn't exist, hence we are creating one for a 3mo period.")
         FetchStocks(ticker_symbol, '3mo')
 
-    NewsAnalyzer_obj.plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
+    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship(NewsAnalyzer_obj.ScoreResult())
 
 
 
@@ -108,3 +108,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
