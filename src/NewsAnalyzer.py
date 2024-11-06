@@ -252,7 +252,8 @@ class NewsAnalyzer:
 
 
 
-    def PlotNews(self, dict_count):
+    def PlotNews(self):
+        dict_count = self.get_results_of_occurences()
         # Get the parent directory of the current file's directory
         parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
