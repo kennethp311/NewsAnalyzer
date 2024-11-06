@@ -6,12 +6,13 @@ import pandas as pd
 
 
 class FetchNews:
-    def __init__(self, db_config, news_api_key, table_name):
+    def __init__(self, db_config, news_api_key, ticker_symbol):
         self.db_config = db_config
         self.conn = self.connect_to_db()
         self.cursor = self.conn.cursor(dictionary=True)
         self.news_api_key = news_api_key
-        self.table_name = table_name
+        self.table_name = f"{ticker_symbol}_article_data"
+        self.news_topic = f"{ticker_symbol.upper()} stock performance"
 
     def __del__(self):
         if self.conn and self.conn.is_connected():
@@ -109,12 +110,12 @@ class FetchNews:
         self.conn.commit()
 
 
-    def FetchNews_DB(self, news_search_topic):
+    def FetchNews_DB(self):
         today = datetime.today()
         dates_30_days_prior = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]    
 
         for day in dates_30_days_prior:
-            articles = self.fetch_news_at_date(news_search_topic, day)
+            articles = self.fetch_news_at_date(self.news_topic, day)
             self.store_articles_in_mysql(articles)
         
         #self.Cleanup_table()
