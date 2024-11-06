@@ -38,9 +38,6 @@ class FetchStock:
         stock_history = stock_data.history(period=period)  # Get historical stock data for the given period
         stock_history.reset_index(inplace=True)            # Reset index to make 'Date' a column
 
-        # Convert 'Date' column to Pacific Time (Los Angeles), Since it's already timezone-aware, use tz_convert directly
-        stock_history['Date'] = stock_history['Date'].dt.tz_convert('America/Los_Angeles').dt.date
-
         self.cursor.execute(f"DROP TABLE IF EXISTS {self.table_name};")
 
         self.cursor.execute(f'''
@@ -69,30 +66,6 @@ class FetchStock:
 
         print(f"Stock data for {self.ticker_symbol} has been stored successfully as a table named {self.table_name} in MySQL for the period: {period}.")
 
-
-    # def plot_close_prices(self):
-    #     # Fetch data from the database
-    #     self.cursor.execute(f"SELECT Date, Close FROM {self.ticker_symbol.lower()}_stock_data ORDER BY Date ASC")
-    #     result = self.cursor.fetchall()
-
-    #     # Extract dates and closing prices
-    #     dates = [row['Date'] for row in result]
-    #     close_prices = [row['Close'] for row in result]
-
-    #     # Plotting with dots at each data point
-    #     plt.figure(figsize=(10, 6))
-    #     plt.plot(dates, close_prices, label="Close Price", marker='o')  # Add marker='o' to plot dots at each point
-    #     plt.xlabel("Date")
-    #     plt.ylabel("Close Price")
-    #     plt.title(f"{self.ticker_symbol} Closing Prices Over Time")
-    #     plt.legend()
-    #     plt.grid(True)
-        
-    #     # Set all dates on x-axis
-    #     plt.xticks(dates, rotation=45)  # This will set each date as a tick label and rotate them for better readability
-
-    #     plt.tight_layout()
-    #     plt.show()
 
 
     def plot_close_prices(self):
