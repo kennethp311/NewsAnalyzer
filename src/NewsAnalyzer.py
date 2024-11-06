@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator     # only used to make y-axis lines as integers
 import numpy as np
-from datetime import date
+from datetime import date, timedelta
 from collections import Counter
 import os
 import plotly.graph_objects as go
@@ -41,7 +41,6 @@ class NewsAnalyzer:
             return None
 
 
-
     def fetch_table(self):  # Helper Function
         try:
             query = f"SELECT * FROM {self.article_table}"
@@ -51,7 +50,12 @@ class NewsAnalyzer:
         except mysql.connector.Error as err:
             print(f"Error in fetch_table(): {err}")
             return []
-            
+
+
+    def table_exists(self, table_name):
+        self.cursor.execute("SHOW TABLES LIKE %s", (table_name,))
+        result = self.cursor.fetchone()
+        return result is not None
 
 
 
@@ -232,14 +236,17 @@ class NewsAnalyzer:
 
         return dict_count
 
-    def ScoreResult(self, dict_count):
-        dict_score = {}
+
+
+
+    def ScoreResult(self):
+        dict_score = {} 
+        dict_count = self.get_results_of_occurences()
 
         for date in dict_count:
             dict_score[date] = dict_count[date]['Good News'] - dict_count[date]['Bad News']
         
-        print(dict_score)
-
+        return dict_score
 
 
 
@@ -313,46 +320,103 @@ class NewsAnalyzer:
             return f"Error: {e}"
 
 
-
-    def myfunc(self):
-        
+    def plot_news_and_stocks_relationship(self, dict_score):
+        # Get stock data date range
         query = f"SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM {self.article_table};"
         self.cursor.execute(query)
         stock_dates = self.cursor.fetchall()
-
         for datetime in stock_dates:
             start_date = datetime.get('min_date').date()
             end_date = datetime.get('max_date').date()
         
+        # Retrieve closing prices within the date range
         query = f"SELECT Date, Close FROM {self.stock_table} WHERE Date BETWEEN %s AND %s ORDER BY Date ASC;"
         self.cursor.execute(query, (start_date, end_date))
-
         result = self.cursor.fetchall()
-        # for a in result:
-        #     print(a.get('Date'), a.get('Close'))
         
-
         # Extract dates and closing prices
         dates = [row['Date'] for row in result]
         close_prices = [row['Close'] for row in result]
 
-        # Create a scatter plot with Plotly
-        fig = go.Figure()
+        # Identify missing dates in stock data that have scores in dict_score
+        missing_dates = [date for date in dict_score if date not in dates]
+        extended_dates = dates + missing_dates
+        extended_dates.sort()  # Sort dates to maintain chronological order
 
-        # Add a scatter trace with date and close price
+        # Generate interpolated closing prices for missing dates
+        extended_close_prices = []
+        date_price_dict = {date: close for date, close in zip(dates, close_prices)}
+        for date in extended_dates:
+            if date in date_price_dict:
+                extended_close_prices.append(date_price_dict[date])
+            else:
+                # Interpolate using nearest available prices
+                prev_date = max(d for d in dates if d < date)
+                next_date = min(d for d in dates if d > date)
+                prev_close = date_price_dict[prev_date]
+                next_close = date_price_dict[next_date]
+                interpolated_close = prev_close + (next_close - prev_close) * (
+                    (date - prev_date).days / (next_date - prev_date).days
+                )
+                extended_close_prices.append(interpolated_close)
+
+        # Determine marker colors, sizes, and opacities for all dates
+        max_score = max(dict_score.values()) if dict_score else None
+        min_score = min(dict_score.values()) if dict_score else None
+        is_unique_max = list(dict_score.values()).count(max_score) == 1 if max_score is not None else False
+        is_unique_min = list(dict_score.values()).count(min_score) == 1 if min_score is not None else False
+
+        marker_colors = [
+            "rgba(211, 211, 211, 1)" if date not in dict_score else  # Light gray if no score
+                
+            'red' if dict_score[date] < 0 and dict_score.get(date) == min_score and is_unique_min else
+            'rgba(200, 100, 100, 1)' if dict_score[date] < 0 else
+
+            'green' if dict_score[date] > 0 and dict_score.get(date) == max_score and is_unique_max else
+            'rgba(150, 230, 150, 1)' if dict_score[date] > 0 else
+                
+            'blue' if dict_score[date] == 0 else 'black'
+            for date in extended_dates
+        ]
+
+        marker_sizes = [
+            ((1 ** dict_score.get(date, 0)) * 10) + ((dict_score.get(date, 0) - 1) * 3) if dict_score.get(date, 0) > 0 else 
+            ((1 ** dict_score.get(date, 0)) * 10) + ((dict_score.get(date, 0) + 1) * -3) if dict_score.get(date, 0) < 0 else 
+            10
+            for date in extended_dates
+        ]
+
+        marker_opacities = [
+            0.4 if date in missing_dates else 1
+            for date in extended_dates
+        ]
+
+        # Custom tooltip text with weekday abbreviation for all dates
+        tooltip_texts = []
+        for date, close in zip(extended_dates, extended_close_prices):
+            weekday_label = date.strftime("%a")  # Get abbreviated day name (e.g., Mon, Tue)
+            date_with_weekday = f"{date} ({weekday_label})"
+            if date in missing_dates:
+                tooltip_texts.append(f"<b>Date:</b> {date_with_weekday}<br><b>Close:</b> No Trading <br><b>Score:</b> {dict_score.get(date, 'N/A')}")
+            else:
+                tooltip_texts.append(f"<b>Date:</b> {date_with_weekday}<br><b>Close:</b> {close:.2f}<br><b>Score:</b> {dict_score.get(date, 'N/A')}")
+
+        # Create the scatter plot
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=dates,
-            y=close_prices,
-            mode='lines+markers',  # Line plot with markers
+            x=extended_dates,
+            y=extended_close_prices,
+            mode='lines+markers',
             name='Close Price',
-            marker=dict(size=6),
-            text=[f"Date: {date}<br>Close: {close}" for date, close in zip(dates, close_prices)],  # Tooltip text
-            hoverinfo='text'  # Show custom text on hover
+            line=dict(color="rgba(0, 0, 0, 0.5)"),  # Black line with 70% opacity
+            marker=dict(size=marker_sizes, color=marker_colors, opacity=marker_opacities),  # Apply different opacities
+            text=tooltip_texts,  # Tooltip text with score and day label
+            hoverinfo='text'
         ))
 
         # Set title and labels
         fig.update_layout(
-            title=f"{self.ticker_symbol} Closing Prices Over Time",
+            title=f"<b>{self.ticker_symbol.upper()}:</b> Closing Prices over Time with its respective News Sentiment",
             xaxis_title="Date",
             yaxis_title="Close Price",
             template="plotly_white"
@@ -360,6 +424,8 @@ class NewsAnalyzer:
 
         # Display the plot
         fig.show()
+
+
 
 
 
