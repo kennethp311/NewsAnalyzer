@@ -27,7 +27,7 @@ def PlotNews(ticker_symbol):
 
 def PlotStocksNews(ticker_symbol):
     NewsAnalyzer_obj = NewsAnalyzer(db_config, api_keys['Openai API'], ticker_symbol)
-    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship()
+    NewsAnalyzer_obj.store_plot_news_and_stocks_relationship()
 
 
 
@@ -46,8 +46,7 @@ def RunProgram():
             Fetch_News(ticker_symbol)
             AnalyzeNews(ticker_symbol)
             NewsAnalyzer_obj.store_plot_news_and_stocks_relationship()
-            return
-
+    
         elif decision0.lower() == 'n':
                 NewsAnalyzer_obj.PlotNews()
                 NewsAnalyzer_obj.store_plot_news_and_stocks_relationship()
@@ -67,10 +66,10 @@ def RunProgram():
                 # return
         else:
             print("Wrong Input [End Program]")
-            return
+        
+        return
 
-
-    if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) == False:
+    elif NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.article_table) == False:
 
         decision1 = input(f"{NewsAnalyzer_obj.article_table} doesn't exist, so would you like to create one? (Y/N): ")
        
@@ -81,33 +80,26 @@ def RunProgram():
                 Fetch_News(ticker_symbol)
                 AnalyzeNews(ticker_symbol)
                 PlotNews(ticker_symbol)
-            
+                FetchStocks(ticker_symbol, '3mo')
+                PlotStocksNews(ticker_symbol) 
+
             elif (decision2.lower() == 'n'):
                 Fetch_News(ticker_symbol)
-                return
 
             else:
                 print("Wrong Input [End Program]")
-                return
-
+            
         elif decision1.lower() == 'n': 
             if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table):
                 decision4 = input(f"Plot the closed prices over time of stock {ticker_symbol.upper()} (Y/N): ")
                 if decision4.lower() == 'y':
                     PlotStocks(ticker_symbol)
-                return
-            else:
-                return
             
         else:
             print("Wrong Input [End Program]")
-            return
-
-    if NewsAnalyzer_obj.table_exists(NewsAnalyzer_obj.stock_table) == False:
-        print(f"{NewsAnalyzer_obj.stock_table} doesn't exist, hence we are creating one for a 3mo period.")
-        FetchStocks(ticker_symbol, '3mo')
-
-    NewsAnalyzer_obj.show_plot_news_and_stocks_relationship()
+        
+        return 
+    return
 
 
 
@@ -130,6 +122,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
