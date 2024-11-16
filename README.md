@@ -1,3 +1,10 @@
+### <ins>How to Run Program </ins> 
+**(1)**  Setup an virtual environment and 'pip install' the required packages listed within requirements.txt <br />
+**(2)**  Use command 'source myenv/bin/activate' to activate the virtual environment. <br />
+**(3)**  Within 'src/config.py', fill in the mySQL configuration and the required API keys. <br />
+**(4)**  Use command 'python3 src/main.py' to run the program. 
+
+
 ### <ins>Process for Article Analysis and Stock Performance Prediction </ins> 
 **Step 1:**  Data Collection and Preprocessing <br />
 - **1.1** Gather a dataset of articles containing the following fields: Title, Description, URL, Date. <br /> 
